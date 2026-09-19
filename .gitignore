@@ -1,1 +1,5 @@
 .claude/settings.local.json
+
+# 題庫/ 只有 exam* 開頭的檔案入庫，其餘（各科目題庫與原始檔）僅保留本機
+題庫/*
+!題庫/exam*
