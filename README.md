@@ -51,6 +51,7 @@ flowchart LR
 | Google **Gemini CLI** | ✅ 已安裝 |
 
 不綁單一廠商——換工具不必重做，操作指令也相同。
+技能正本就在本 repo 的 [`skill/exam-to-qb/`](skill/exam-to-qb/)，clone 後執行一行安裝指令即可（見〈技能安裝與同步〉）。
 
 ---
 
@@ -113,59 +114,57 @@ exam02.csv 第 5 題答案改成 (C)，並更新解說
 
 ## 技能安裝與同步
 
-本技能目前**同時存在兩份**，內容相同：
+技能本體就放在本 repo 的 [`skill/exam-to-qb/`](skill/exam-to-qb/)，是**唯一正本**；各 AI 工具讀取的家目錄位置由安裝腳本佈署。
 
 | 路徑 | 供哪些工具讀取 |
 |------|---------------|
+| `skill/exam-to-qb/`（本 repo） | 正本，版控於此 |
 | `~/.claude/skills/exam-to-qb/` | Claude Code |
 | `~/.agents/skills/exam-to-qb/` | OpenAI Codex、Gemini CLI（兩家共用的互通路徑） |
 
-> Claude Code 目前只掃自己的 `~/.claude/skills/` 與專案內的 `.claude/skills/`，不讀 `~/.agents/skills/`，所以才需要兩份。
+> Claude Code 只掃 `~/.claude/skills/` 與專案內的 `.claude/skills/`，不讀 `~/.agents/skills/`，所以要佈署到兩個位置。
 
-### 安裝到新機器
-
-```bash
-# 1) 取得技能（任一既有機器上複製整個資料夾即可）
-# 2) 放到兩個位置
-mkdir -p ~/.claude/skills ~/.agents/skills
-cp -r exam-to-qb ~/.claude/skills/
-cp -r exam-to-qb ~/.agents/skills/
-```
-
-驗證可用（在技能目錄下執行，應印出 `BOM=False`）：
+### 安裝（新電腦或其他教師）
 
 ```bash
-cd ~/.agents/skills/exam-to-qb
-python build.py --tsv <測試.tsv> --out /tmp/t.csv --big5
+git clone git@github.com:RelerChenTajen/QB.git
+cd QB/skill
 ```
 
-### 改過技能後要同步兩份
-
-```bash
-# 以 Claude Code 這份為準，覆蓋另一份
-rm -rf ~/.agents/skills/exam-to-qb
-cp -r ~/.claude/skills/exam-to-qb ~/.agents/skills/
-diff -r ~/.claude/skills/exam-to-qb ~/.agents/skills/exam-to-qb && echo 兩份一致
-```
-
-### 之後可改成「一份正本＋連結」（免同步）
-
-確認多環境都穩定後，可以只留一份正本，另一處用連結指過去，就不必再手動同步：
-
-```bat
-:: Windows：請在「命令提示字元 cmd.exe」執行（mklink 是 cmd 內建指令，PowerShell 不認得）
-:: 目錄連結 /J 免系統管理員權限
-rmdir /S /Q "%USERPROFILE%\.claude\skills\exam-to-qb"
-mklink /J "%USERPROFILE%\.claude\skills\exam-to-qb" "%USERPROFILE%\.agents\skills\exam-to-qb"
+```powershell
+# Windows
+.\install.ps1             # 複製模式
+.\install.ps1 -Link       # 目錄連結模式（git pull 後自動更新，免重裝）
+.\install.ps1 -WhatIf     # 只顯示會做什麼，不實際動作
 ```
 
 ```bash
-# macOS / Linux（符號連結）
-rm -rf ~/.claude/skills/exam-to-qb
-ln -s ~/.agents/skills/exam-to-qb ~/.claude/skills/exam-to-qb
+# macOS / Linux
+./install.sh              # 複製模式
+./install.sh --link       # 符號連結模式
+./install.sh --dry-run    # 只顯示會做什麼
 ```
 
-改成連結前，請先確認 `~/.agents/skills/exam-to-qb/` 那份是最新且可正常執行——因為上面的指令會刪掉 `~/.claude` 那一份。
+兩種模式的差別：
+
+| 模式 | 優點 | 代價 |
+|------|------|------|
+| **複製**（預設） | 最保險，任何環境都可用 | 改了 repo 的技能要重跑安裝腳本 |
+| **連結** | `git pull` 後立即生效，不會有版本漂移 | 需要 repo 一直放在原位置；Windows 用 `mklink /J`，免系統管理員權限 |
+
+### 驗證安裝成功
+
+```bash
+python ~/.agents/skills/exam-to-qb/build.py --help
+```
+
+在 Claude Code 裡也可以用 `/skills` 指令確認 `exam-to-qb` 已載入。
+
+### 修改技能的流程
+
+1. 改 `skill/exam-to-qb/` 底下的檔案（正本）
+2. commit + push
+3. 複製模式：重跑安裝腳本；連結模式：不必做任何事
 
 ### 各工具的技能目錄對照
 
@@ -212,6 +211,7 @@ QB/
 ├── README.md                 本說明
 ├── exam.csv                  題庫範本（UTF-8 no BOM）
 ├── exam_big5.csv             範本 Big5 版
+├── skill/                    技能正本（exam-to-qb）與安裝腳本
 ├── 題庫/                     已完成的題庫、原始題目檔與中繼檔
                               （只有 exam* 開頭的範例檔入庫，其餘僅保留本機，見 .gitignore）
 └── 第四屆校務創新創意實踐典範競賽/  競賽用工作目錄（不入庫）
