@@ -1,0 +1,18 @@
+* text=auto
+
+# 換行在這些檔案裡有語意，git 一律不得正規化：
+#   header.csv 的引號欄位內含刻意的單獨 LF，題庫 CSV 的 CRLF 由轉換引擎決定
+*.csv -text
+*.tsv -text
+
+# 二進位
+*.docx -text
+*.mp4  -text
+*.pdf  -text
+
+# shell 腳本在 macOS/Linux 必須是 LF，否則 /bin/bash 會因 ^M 無法執行
+*.sh text eol=lf
+
+# PowerShell 腳本用 CRLF；含中文者另需存成 UTF-8 with BOM，
+# 否則 Windows PowerShell 5.1 會以系統 ANSI 解讀而語法錯誤
+*.ps1 text eol=crlf
