@@ -40,12 +40,24 @@ flowchart LR
 | 低碳生活與氣候公約 | 30 | `題庫/低碳生活與氣候公約測驗.csv` |
 | SDGs 永續發展 | 30 | `題庫/SDGs 永續發展測驗題庫.csv` |
 
+### 三種 AI 環境都能用
+
+本專案的技能依循 [Agent Skills 開放標準](https://agentskills.io) 撰寫，同一份技能可安裝在三家主流 AI 工具下，轉換引擎為 Python（無第三方套件），Windows／macOS／Linux 皆可執行：
+
+| AI 環境 | 狀態 |
+|---------|------|
+| Anthropic **Claude Code** | ✅ 已安裝 |
+| OpenAI **Codex** | ✅ 已安裝 |
+| Google **Gemini CLI** | ✅ 已安裝 |
+
+不綁單一廠商——換工具不必重做，操作指令也相同。
+
 ---
 
 # 詳細使用說明
 
 把使用者提供的題目檔案（Word / PDF / 純文字等）轉成可匯入的題庫 CSV，並可同時輸出 Big5 副本。
-背後由 `exam-to-qb` skill 自動處理（位置：`~/.claude/skills/exam-to-qb/`）。
+背後由 `exam-to-qb` skill 自動處理，可在 Claude Code、OpenAI Codex、Gemini CLI 三種環境下運作（安裝位置見下方〈技能安裝與同步〉）。
 
 ## 編碼約定
 - 主檔一律 **UTF-8 (no BOM)**。
@@ -98,6 +110,87 @@ exam02.csv 第 5 題答案改成 (C)，並更新解說
 - **先決定的事先講**（類別名稱、要不要 Big5），可省去中途反問。
 - 沒指定時預設：UTF-8 (no BOM)，並主動詢問類別與 Big5。
 - 支援來源格式：`.docx`、`.pdf`、`.txt`、`.md`、`.csv`（舊版 `.doc` 二進位檔建議先另存成 `.docx`）。
+
+## 技能安裝與同步
+
+本技能目前**同時存在兩份**，內容相同：
+
+| 路徑 | 供哪些工具讀取 |
+|------|---------------|
+| `~/.claude/skills/exam-to-qb/` | Claude Code |
+| `~/.agents/skills/exam-to-qb/` | OpenAI Codex、Gemini CLI（兩家共用的互通路徑） |
+
+> Claude Code 目前只掃自己的 `~/.claude/skills/` 與專案內的 `.claude/skills/`，不讀 `~/.agents/skills/`，所以才需要兩份。
+
+### 安裝到新機器
+
+```bash
+# 1) 取得技能（任一既有機器上複製整個資料夾即可）
+# 2) 放到兩個位置
+mkdir -p ~/.claude/skills ~/.agents/skills
+cp -r exam-to-qb ~/.claude/skills/
+cp -r exam-to-qb ~/.agents/skills/
+```
+
+驗證可用（在技能目錄下執行，應印出 `BOM=False`）：
+
+```bash
+cd ~/.agents/skills/exam-to-qb
+python build.py --tsv <測試.tsv> --out /tmp/t.csv --big5
+```
+
+### 改過技能後要同步兩份
+
+```bash
+# 以 Claude Code 這份為準，覆蓋另一份
+rm -rf ~/.agents/skills/exam-to-qb
+cp -r ~/.claude/skills/exam-to-qb ~/.agents/skills/
+diff -r ~/.claude/skills/exam-to-qb ~/.agents/skills/exam-to-qb && echo 兩份一致
+```
+
+### 之後可改成「一份正本＋連結」（免同步）
+
+確認多環境都穩定後，可以只留一份正本，另一處用連結指過去，就不必再手動同步：
+
+```bat
+:: Windows：請在「命令提示字元 cmd.exe」執行（mklink 是 cmd 內建指令，PowerShell 不認得）
+:: 目錄連結 /J 免系統管理員權限
+rmdir /S /Q "%USERPROFILE%\.claude\skills\exam-to-qb"
+mklink /J "%USERPROFILE%\.claude\skills\exam-to-qb" "%USERPROFILE%\.agents\skills\exam-to-qb"
+```
+
+```bash
+# macOS / Linux（符號連結）
+rm -rf ~/.claude/skills/exam-to-qb
+ln -s ~/.agents/skills/exam-to-qb ~/.claude/skills/exam-to-qb
+```
+
+改成連結前，請先確認 `~/.agents/skills/exam-to-qb/` 那份是最新且可正常執行——因為上面的指令會刪掉 `~/.claude` 那一份。
+
+### 各工具的技能目錄對照
+
+| 工具 | 個人層級 | 專案層級 |
+|------|---------|---------|
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
+| OpenAI Codex | `~/.agents/skills/` | `.agents/skills/` |
+| Gemini CLI | `~/.gemini/skills/` 或 `~/.agents/skills/` | `.gemini/skills/` 或 `.agents/skills/` |
+
+## 直接用指令跑引擎（不透過 AI）
+
+題目已整理成 TSV 時，可以略過 AI 直接跑引擎：
+
+```bash
+cd ~/.agents/skills/exam-to-qb
+
+# 全部同一個類別
+python build.py --tsv rows.tsv --out exam02.csv --category "綠色能源" --big5
+
+# 各題依章節填不同類別（.cats 一行一個，行數需等於題數）
+python build.py --tsv rows.tsv --out exam02.csv --category-file rows.cats --big5
+
+# 從 docx 取出純文字
+python extract.py 題目.docx -o 題目.txt
+```
 
 ## 題庫 CSV 格式速查（27 欄）
 | 欄 | 名稱 | 說明 |
